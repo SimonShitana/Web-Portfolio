@@ -1,7 +1,5 @@
 import os
 import flet as ft
-import webbrowser
-import threading
 
 def main(page: ft.Page):
 
@@ -872,7 +870,7 @@ def main(page: ft.Page):
                 )
             ],
         ),
-    )  # <-- THIS WAS THE MISSING CLOSING PARENTHESIS!
+    )
 
     # 7. Technical Blog Section - LESSONS LEARNED
     blog_section = ft.Container(
@@ -1326,16 +1324,13 @@ def main(page: ft.Page):
         )
     )
 
-def open_browser():
-    import time
-    time.sleep(2)
-    webbrowser.open("http://127.0.0.1:8551")
-
+# =========================================================
+# MAIN ENTRY POINT - CORRECTED FOR RENDER DEPLOYMENT
+# =========================================================
 if __name__ == "__main__":
-    try:
-        threading.Thread(target=open_browser, daemon=True).start()
-        ft.app(target=main, host="127.0.0.1", port=8551, view=ft.AppView.WEB_BROWSER, assets_dir="assets")
-    except Exception as e:
-        print(f"Error: {e}", flush=True)
-        import traceback
-        traceback.print_exc()
+    ft.app(
+        target=main,
+        view=ft.AppView.WEB_BROWSER,
+        assets_dir="assets",
+        port=int(os.environ.get("PORT", 8000))
+    )
