@@ -177,7 +177,7 @@ def main(page: ft.Page):
                             border_radius=30,
                             width=200,
                             content=ft.Text(
-                                "✨ ASPIRING MECHANICAL ENGINEER",
+                                " ASPIRING MECHANICAL ENGINEER",
                                 size=12,
                                 weight=ft.FontWeight.W_600,
                                 color=ACCENT_ORANGE,
@@ -191,7 +191,7 @@ def main(page: ft.Page):
                             color=TEXT_GREY,
                         ),
                         ft.Text(
-                            "Mechanical & Mining Engineering",
+                            "Mechanical Engineering",
                             size=48,
                             weight=ft.FontWeight.BOLD,
                             color=PRIMARY_ORANGE,
