@@ -54,6 +54,25 @@ def main(page: ft.Page):
     def close_certificate_zoom(dialog):
         page.pop_dialog()
 
+    def open_project_image_zoom(title: str, image_file: str):
+        zoom_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(title, color=PRIMARY_ORANGE, weight=ft.FontWeight.BOLD),
+            content=ft.Container(
+                width=900,
+                height=620,
+                bgcolor=BG_WHITE,
+                padding=10,
+                border_radius=8,
+                content=ft.Image(src=f"/images/{image_file}", fit="contain"),
+            ),
+            actions=[
+                ft.TextButton("Close", on_click=lambda e: close_certificate_zoom(zoom_dialog)),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.show_dialog(zoom_dialog)
+
     def get_uniform_border(width: int, color: str):
         return ft.Border(
             top=ft.BorderSide(width, color),
@@ -221,12 +240,10 @@ def main(page: ft.Page):
                         ft.Row(
                             spacing=15,
                             controls=[
-                                ft.ElevatedButton(
+                                ft.FilledButton(
                                     "Explore My Work",
                                     icon=ft.Icons.WORK_OUTLINE,
-                                    bgcolor=PRIMARY_ORANGE,
-                                    color=BG_WHITE,
-                                    style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(25, 12, 25, 12)),
+                                    style=ft.ButtonStyle(bgcolor=PRIMARY_ORANGE, color=BG_WHITE, shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(25, 12, 25, 12)),
                                     on_click=lambda e: navigate_to("projects"),
                                 ),
                                 ft.OutlinedButton(
@@ -281,11 +298,9 @@ def main(page: ft.Page):
                             content=ft.Image(src="/images/profile.jpg", width=316, height=316, border_radius=158, fit="cover"),
                         ),
                         ft.Container(height=30),
-                        ft.ElevatedButton(
+                        ft.FilledButton(
                             "🔗 Open LinkedIn",
-                            bgcolor=PRIMARY_ORANGE,
-                            color=BG_WHITE,
-                            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(30, 12, 30, 12)),
+                            style=ft.ButtonStyle(bgcolor=PRIMARY_ORANGE, color=BG_WHITE, shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(30, 12, 30, 12)),
                             url="https://www.linkedin.com/in/simon-shitana-a960b730b/",
                         ),
                     ],
@@ -303,7 +318,7 @@ def main(page: ft.Page):
                         ft.Text("Currently, I'm fascinated by the intersection of mechanical engineering and data science, exploring how predictive analytics can optimize thermal systems and manufacturing processes.", size=15, color=TEXT_GREY, style=ft.TextStyle(height=1.6)),
                         ft.Divider(color=BORDER_COLOR),
                         ft.Row(spacing=15, controls=[
-                            ft.ElevatedButton("Contact Me", icon=ft.Icons.EMAIL, bgcolor=PRIMARY_ORANGE, color=BG_WHITE, on_click=lambda e: navigate_to("contact")),
+                            ft.FilledButton("Contact Me", icon=ft.Icons.EMAIL, style=ft.ButtonStyle(bgcolor=PRIMARY_ORANGE, color=BG_WHITE), on_click=lambda e: navigate_to("contact")),
                             ft.OutlinedButton("View Projects", icon=ft.Icons.FOLDER_OPEN, style=ft.ButtonStyle(side=ft.BorderSide(2, PRIMARY_ORANGE)), on_click=lambda e: navigate_to("projects")),
                         ]),
                     ],
@@ -422,7 +437,73 @@ def main(page: ft.Page):
         ),
     )
 
-    # 6. Projects Section - ALL PROJECTS
+    # Helper function to create zoomable project image
+    def create_zoomable_project_image(image_file: str, title: str, caption: str, height: int = 220):
+        img_control = ft.Image(src=f"/images/{image_file}", height=height, fit="contain", scale=1.0, animate_scale=ft.Animation(400, ft.AnimationCurve.EASE_OUT))
+        
+        card_content = ft.Container(
+            bgcolor=BG_WHITE,
+            border_radius=8,
+            border=get_uniform_border(1, BORDER_COLOR),
+            on_click=lambda e: open_project_image_zoom(title, image_file),
+            content=ft.Column(
+                spacing=8,
+                controls=[
+                    ft.Container(
+                        height=height,
+                        width=None,
+                        clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                        border_radius=ft.BorderRadius(8, 8, 0, 0),
+                        alignment=ft.Alignment(0, 0),
+                        bgcolor=LIGHT_BG,
+                        content=img_control
+                    ),
+                    ft.Container(
+                        padding=ft.Padding(10, 8, 10, 12),
+                        content=ft.Column(
+                            spacing=4,
+                            controls=[
+                                ft.Text(caption, size=12, weight=ft.FontWeight.W_500, color=DEEP_ORANGE, text_align=ft.TextAlign.CENTER),
+                                ft.Text("Click to zoom", size=10, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
+                            ]
+                        )
+                    )
+                ]
+            )
+        )
+        
+        hover_stack = ft.Stack(
+            height=height + 50,
+            controls=[
+                ft.Container(
+                    top=10,
+                    left=0,
+                    right=0,
+                    animate_position=ft.Animation(300, ft.AnimationCurve.EASE_OUT),
+                    content=card_content
+                )
+            ]
+        )
+        
+        def make_hover_handler(stack_wrapper, target_img):
+            inner_move_container = stack_wrapper.controls[0]
+            def handle_hover(e):
+                if e.data == "true":
+                    inner_move_container.top = 0  
+                    inner_move_container.shadow = ft.BoxShadow(blur_radius=12, color=ACCENT_ORANGE)
+                    target_img.scale = 1.02  
+                else:
+                    inner_move_container.top = 10  
+                    inner_move_container.shadow = None
+                    target_img.scale = 1.0
+                inner_move_container.update()
+                target_img.update()
+            return handle_hover
+        
+        card_content.on_hover = make_hover_handler(hover_stack, img_control)
+        return hover_stack
+
+    # 6. Projects Section - ALL PROJECTS with proper images
     project_section = ft.Container(
         key="projects",
         bgcolor=BG_WHITE,
@@ -432,7 +513,7 @@ def main(page: ft.Page):
             controls=[
                 create_section_header("MY ENGINEERING PROJECTS", "Showcasing my mechanical, software, and educational work"),
                 
-                # MINESHIELD APP (Phone format images)
+                # MINESHIELD APP
                 ft.Container(
                     bgcolor=CARD_BG,
                     padding=25,
@@ -460,75 +541,14 @@ def main(page: ft.Page):
                                 ft.Container(content=ft.Text("Firebase", size=11, color=DEEP_ORANGE), bgcolor=LIGHT_BG, padding=5, border_radius=4),
                             ]),
                             
-                            # 3 Image placeholders for Mineshield (Phone format - vertical/portrait)
-                            ft.Text("Project Screenshots", size=14, weight=ft.FontWeight.BOLD, color=DEEP_ORANGE),
+                            ft.Text("Project Screenshots (Click to zoom)", size=14, weight=ft.FontWeight.BOLD, color=DEEP_ORANGE),
                             ft.ResponsiveRow(
                                 spacing=15,
                                 run_spacing=15,
                                 controls=[
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=400,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.PHOTO, color=PRIMARY_ORANGE, size=48),
-                                                ft.Text("Mineshield - Screenshot 1", size=12, color=TEXT_GREY),
-                                                ft.Text("(Phone Format)", size=10, color=SUBTEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for app screenshot showing fall detection feature", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=400,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.PHOTO, color=PRIMARY_ORANGE, size=48),
-                                                ft.Text("Mineshield - Screenshot 2", size=12, color=TEXT_GREY),
-                                                ft.Text("(Phone Format)", size=10, color=SUBTEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for app screenshot showing noise monitoring dashboard", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=400,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.PHOTO, color=PRIMARY_ORANGE, size=48),
-                                                ft.Text("Mineshield - Screenshot 3", size=12, color=TEXT_GREY),
-                                                ft.Text("(Phone Format)", size=10, color=SUBTEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for app screenshot showing location tracking", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("sos.jpeg", "Mineshield - Screenshot 1", "Fall Detection Feature", 350)),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("hazard reporting.jpeg", "Mineshield - Screenshot 2", "Noise Monitoring Dashboard", 350)),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("login page.jpeg", "Mineshield - Screenshot 3", "Location Tracking", 350)),
                                 ]
                             ),
                             ft.Divider(color=BORDER_COLOR),
@@ -567,72 +587,14 @@ def main(page: ft.Page):
                                 ft.Container(content=ft.Text("MATLAB", size=11, color=DEEP_ORANGE), bgcolor=LIGHT_BG, padding=5, border_radius=4),
                             ]),
                             
-                            # 3 Image placeholders for Mechanical Calculator (Square format like MATLAB section)
-                            ft.Text("Project Screenshots", size=14, weight=ft.FontWeight.BOLD, color=DEEP_ORANGE),
+                            ft.Text("Project Screenshots (Click to zoom)", size=14, weight=ft.FontWeight.BOLD, color=DEEP_ORANGE),
                             ft.ResponsiveRow(
                                 spacing=15,
                                 run_spacing=15,
                                 controls=[
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=200,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.IMAGE, color=PRIMARY_ORANGE, size=40),
-                                                ft.Text("Calculator - Interface", size=12, color=TEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for calculator main interface screenshot", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=200,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.IMAGE, color=PRIMARY_ORANGE, size=40),
-                                                ft.Text("Calculator - Stress Analysis", size=12, color=TEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for stress calculation output", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=200,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.IMAGE, color=PRIMARY_ORANGE, size=40),
-                                                ft.Text("Calculator - Results", size=12, color=TEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for calculation results display", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("calcultor 1.png", "Mechanical Calculator - Interface", "Main Calculator Interface", 180)),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("calculator 2.png", "Mechanical Calculator - Stress Analysis", "Stress Calculation Output", 180)),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("calculator 3.png", "Mechanical Calculator - Results", "Results Display", 180)),
                                 ]
                             ),
                             ft.Divider(color=BORDER_COLOR),
@@ -668,72 +630,14 @@ def main(page: ft.Page):
                                 ft.Container(content=ft.Text("React", size=11, color=DEEP_ORANGE), bgcolor=LIGHT_BG, padding=5, border_radius=4),
                             ]),
                             
-                            # 3 Image placeholders for Educational Website (Square format like MATLAB section)
-                            ft.Text("Project Screenshots", size=14, weight=ft.FontWeight.BOLD, color=DEEP_ORANGE),
+                            ft.Text("Project Screenshots (Click to zoom)", size=14, weight=ft.FontWeight.BOLD, color=DEEP_ORANGE),
                             ft.ResponsiveRow(
                                 spacing=15,
                                 run_spacing=15,
                                 controls=[
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=200,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.WEB, color=PRIMARY_ORANGE, size=40),
-                                                ft.Text("Website - Homepage", size=12, color=TEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for website homepage screenshot", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=200,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.QUIZ, color=PRIMARY_ORANGE, size=40),
-                                                ft.Text("Website - Quiz Page", size=12, color=TEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for interactive quiz interface", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=200,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.VIDEO_LIBRARY, color=PRIMARY_ORANGE, size=40),
-                                                ft.Text("Website - Resources", size=12, color=TEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for learning resources page", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("website landing page.png", "Educational Website - Homepage", "Main Homepage", 180)),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("website login.png", "Educational Website - Quiz Page", "Interactive Quiz Interface", 180)),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("website study room.png", "Educational Website - Resources", "Learning Resources Page", 180)),
                                 ]
                             ),
                             ft.Divider(color=BORDER_COLOR),
@@ -769,72 +673,14 @@ def main(page: ft.Page):
                                 ft.Container(content=ft.Text("WebSockets", size=11, color=DEEP_ORANGE), bgcolor=LIGHT_BG, padding=5, border_radius=4),
                             ]),
                             
-                            # 3 Image placeholders for Digital Game Board (Square format like MATLAB section)
-                            ft.Text("Project Screenshots", size=14, weight=ft.FontWeight.BOLD, color=DEEP_ORANGE),
+                            ft.Text("Project Screenshots (Click to zoom)", size=14, weight=ft.FontWeight.BOLD, color=DEEP_ORANGE),
                             ft.ResponsiveRow(
                                 spacing=15,
                                 run_spacing=15,
                                 controls=[
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=200,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.GAMEPAD, color=PRIMARY_ORANGE, size=40),
-                                                ft.Text("Game Board - Main", size=12, color=TEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for main game board interface", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=200,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.PEOPLE, color=PRIMARY_ORANGE, size=40),
-                                                ft.Text("Game Board - Multiplayer", size=12, color=TEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for multiplayer mode screenshot", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
-                                    ft.Container(
-                                        col={"sm": 12, "md": 4},
-                                        height=200,
-                                        bgcolor=BG_WHITE,
-                                        border_radius=8,
-                                        border=get_uniform_border(1, BORDER_COLOR),
-                                        alignment=ft.Alignment(0, 0),
-                                        content=ft.Column(
-                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                            spacing=10,
-                                            controls=[
-                                                ft.Icon(ft.Icons.EMOJI_EVENTS, color=PRIMARY_ORANGE, size=40),
-                                                ft.Text("Game Board - Scores", size=12, color=TEXT_GREY),
-                                                ft.Container(
-                                                    content=ft.Text("Placeholder for scores and leaderboard", size=11, color=SUBTEXT_GREY, text_align=ft.TextAlign.CENTER),
-                                                    padding=10,
-                                                ),
-                                            ]
-                                        )
-                                    ),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("game board 1.png", "Digital Game Board - Main", "Main Game Board Interface", 180)),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("game 2.png", "Digital Game Board - Multiplayer", "Multiplayer Mode", 180)),
+                                    ft.Container(col={"sm": 12, "md": 4}, content=create_zoomable_project_image("game 3.png", "Digital Game Board - Scores", "Scores and Leaderboard", 180)),
                                 ]
                             ),
                             ft.Divider(color=BORDER_COLOR),
@@ -1215,7 +1061,6 @@ def main(page: ft.Page):
     message_field = ft.TextField(label="Project Details / Inquiry Message", multiline=True, min_lines=5, max_lines=8, border_color=PRIMARY_ORANGE, focused_border_color=ACCENT_ORANGE, bgcolor=BG_WHITE, prefix_icon=ft.Icons.MESSAGE_OUTLINED, filled=True, border_radius=12, text_size=14)
 
     def handle_submit_message(e):
-        # Just redirect to index.html - no validation, no snackbar
         page.launch_url("/index.html")
 
     contact_section = ft.Container(
@@ -1255,7 +1100,7 @@ def main(page: ft.Page):
                     ft.Divider(color=BORDER_COLOR),
                     name_field, email_field, subject_field, message_field,
                     ft.Container(height=5),
-                    ft.ElevatedButton("Send Message", icon=ft.Icons.SEND, bgcolor=PRIMARY_ORANGE, color=BG_WHITE, on_click=handle_submit_message, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(25, 12, 25, 12)), expand=True),
+                    ft.FilledButton("Send Message", icon=ft.Icons.SEND, style=ft.ButtonStyle(bgcolor=PRIMARY_ORANGE, color=BG_WHITE, shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(25, 12, 25, 12)), on_click=handle_submit_message, expand=True),
                 ])),
             ]),
         ]),
