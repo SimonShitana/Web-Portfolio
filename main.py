@@ -1,5 +1,6 @@
 import os
 import flet as ft
+import flet_video as ftv
 
 def main(page: ft.Page):
 
@@ -49,10 +50,10 @@ def main(page: ft.Page):
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.show_dialog(zoom_dialog)
+        page.open(zoom_dialog)
 
     def close_certificate_zoom(dialog):
-        page.pop_dialog()
+        page.close(dialog)
 
     def open_project_image_zoom(title: str, image_file: str):
         zoom_dialog = ft.AlertDialog(
@@ -71,7 +72,7 @@ def main(page: ft.Page):
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.show_dialog(zoom_dialog)
+        page.open(zoom_dialog)
 
     def get_uniform_border(width: int, color: str):
         return ft.Border(
@@ -718,7 +719,7 @@ def main(page: ft.Page):
         ),
     )
 
-    # 7. Technical Blog Section - LESSONS LEARNED
+    # 7. Technical Blog Section - LESSONS LEARNED (WITH VIDEO)
     blog_section = ft.Container(
         key="blog",
         bgcolor=LIGHT_BG,
@@ -746,6 +747,51 @@ def main(page: ft.Page):
                                 size=15,
                                 color=TEXT_GREY,
                                 style=ft.TextStyle(height=1.6),
+                            ),
+                        ],
+                    ),
+                ),
+                
+                # Video Section using flet_video
+                ft.Container(
+                    bgcolor=BG_WHITE,
+                    padding=25,
+                    border_radius=10,
+                    border=get_uniform_border(1, BORDER_COLOR),
+                    content=ft.Column(
+                        spacing=15,
+                        controls=[
+                            ft.Row([
+                                ft.Icon(ft.Icons.VIDEO_LIBRARY, color=PRIMARY_ORANGE, size=32),
+                                ft.Text("Project Showcase Video", size=20, weight=ft.FontWeight.BOLD, color=ACCENT_ORANGE),
+                            ]),
+                            ft.Divider(color=BORDER_COLOR),
+                            ft.Container(
+                                height=400,
+                                width=None,
+                                bgcolor="#000000",
+                                border_radius=8,
+                                clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                                content=ftv.Video(
+                                    expand=True,
+                                    playlist=[ftv.VideoMedia("/video/video.mp4")],
+                                    playlist_mode=ftv.PlaylistMode.LOOP,
+                                    fill_color=PRIMARY_ORANGE,
+                                    aspect_ratio=16/9,
+                                    volume=100,
+                                    autoplay=False,
+                                    show_controls=True,
+                                    filter_quality=ft.FilterQuality.HIGH,
+                                    muted=False,
+                                    wakelock=True,
+                                ),
+                            ),
+                            ft.Text(
+                                "Watch this video to see my individual contribution to the Mineshield project, including key features, technical challenges, and team collaboration highlights.",
+                                size=13,
+                                color=TEXT_GREY,
+                                italic=True,
+                                text_align=ft.TextAlign.CENTER,
                             ),
                         ],
                     ),
@@ -1173,8 +1219,8 @@ def main(page: ft.Page):
 # MAIN ENTRY POINT - CORRECTED FOR RENDER DEPLOYMENT
 # =========================================================
 if __name__ == "__main__":
-    ft.app(
-        target=main,
+    ft.run(
+        main,
         view=ft.AppView.WEB_BROWSER,
         assets_dir="assets",
         port=int(os.environ.get("PORT", 8000))
