@@ -1,6 +1,8 @@
 import os
 import flet as ft
 import flet_video as ftv
+import webbrowser
+import threading
 
 def main(page: ft.Page):
 
@@ -33,7 +35,14 @@ def main(page: ft.Page):
     DARK_CARD_BG = "#a04000"        
     DARK_TEXT_WHITE = "#ffffff"
 
+    # Track active dialog using a list (mutable container)
+    active_dialog = [None]
+
     def open_certificate_zoom(title: str, image_file: str):
+        # Close existing dialog if any
+        if active_dialog[0] is not None:
+            close_certificate_zoom()
+        
         zoom_dialog = ft.AlertDialog(
             modal=True,
             title=ft.Text(title, color=PRIMARY_ORANGE, weight=ft.FontWeight.BOLD),
@@ -46,16 +55,28 @@ def main(page: ft.Page):
                 content=ft.Image(src=f"/images/{image_file}", fit="contain"),
             ),
             actions=[
-                ft.TextButton("Close", on_click=lambda e: close_certificate_zoom(zoom_dialog)),
+                ft.TextButton("Close", on_click=lambda e: close_certificate_zoom()),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
+            on_dismiss=lambda e: close_certificate_zoom(),
         )
-        page.open(zoom_dialog)
+        
+        active_dialog[0] = zoom_dialog
+        page.dialog = zoom_dialog
+        zoom_dialog.open = True
+        page.update()
 
-    def close_certificate_zoom(dialog):
-        page.close(dialog)
+    def close_certificate_zoom():
+        if active_dialog[0] is not None:
+            active_dialog[0].open = False
+            page.update()
+            active_dialog[0] = None
 
     def open_project_image_zoom(title: str, image_file: str):
+        # Close existing dialog if any
+        if active_dialog[0] is not None:
+            close_certificate_zoom()
+        
         zoom_dialog = ft.AlertDialog(
             modal=True,
             title=ft.Text(title, color=PRIMARY_ORANGE, weight=ft.FontWeight.BOLD),
@@ -68,11 +89,16 @@ def main(page: ft.Page):
                 content=ft.Image(src=f"/images/{image_file}", fit="contain"),
             ),
             actions=[
-                ft.TextButton("Close", on_click=lambda e: close_certificate_zoom(zoom_dialog)),
+                ft.TextButton("Close", on_click=lambda e: close_certificate_zoom()),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
+            on_dismiss=lambda e: close_certificate_zoom(),
         )
-        page.open(zoom_dialog)
+        
+        active_dialog[0] = zoom_dialog
+        page.dialog = zoom_dialog
+        zoom_dialog.open = True
+        page.update()
 
     def get_uniform_border(width: int, color: str):
         return ft.Border(
@@ -136,6 +162,9 @@ def main(page: ft.Page):
             ),
         )
 
+    # =========================================================
+    # NAVIGATION SYSTEM
+    # =========================================================
     current_page_key = {"value": "overview"}
     nav_buttons = {}
 
@@ -1012,13 +1041,16 @@ def main(page: ft.Page):
                 if e.data == "true":
                     inner_move_container.top = 0  
                     inner_move_container.shadow = ft.BoxShadow(blur_radius=12, color=ACCENT_ORANGE)
-                    target_img.scale = 1.05  
+                    if target_img and hasattr(target_img, 'scale'):
+                        target_img.scale = 1.05  
                 else:
                     inner_move_container.top = 10  
                     inner_move_container.shadow = None
-                    target_img.scale = 1.0
+                    if target_img and hasattr(target_img, 'scale'):
+                        target_img.scale = 1.0
                 inner_move_container.update()
-                target_img.update()
+                if target_img and hasattr(target_img, 'update'):
+                    target_img.update()
             return handle_hover
 
         if cert["file"]:
@@ -1215,13 +1247,22 @@ def main(page: ft.Page):
         )
     )
 
-# =========================================================
-# MAIN ENTRY POINT - CORRECTED FOR RENDER DEPLOYMENT
-# =========================================================
+def open_browser():
+    import time
+    time.sleep(2)
+    webbrowser.open("http://127.0.0.1:8551")
+
 if __name__ == "__main__":
-    ft.run(
-        main,
-        view=ft.AppView.WEB_BROWSER,
-        assets_dir="assets",
-        port=int(os.environ.get("PORT", 8000))
-    )
+    try:
+        threading.Thread(target=open_browser, daemon=True).start()
+        ft.app(
+            target=main,
+            host="127.0.0.1",
+            port=8551,
+            view=ft.AppView.WEB_BROWSER,
+            assets_dir="assets",
+        )
+    except Exception as e:
+        print(f"Error: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
